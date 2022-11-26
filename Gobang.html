@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Gobang Game</title>
+    <script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.20.2/babel.min.js"></script>
+
+    <style>
+        .container {
+            width: 500px;
+            margin: 0 auto;
+        }
+        .center {
+            text-align: center;
+            justify-content: center;
+        }
+        .flex {
+            display: flex;
+        }
+        .flex span {
+            display: inline-block;
+            text-align: right;
+            width: 250px;
+            margin-right: 10px;
+        }
+        .flex .width65{
+            width: 65px;
+        }
+        .flex .prompt {
+            display: inline-block;
+            text-align: left;
+            width:150px;
+            margin-left: 10px;
+        }
+        .red {
+            color: red;
+        }
+        .green {
+            color: green;
+        }
+        .button-container {
+            margin-top:5px;
+        }
+        .table {
+            border-top: 1px solid gray;
+            border-left: 1px solid gray;
+            border-spacing: 0px;
+        }
+        .td {
+            border-right: 1px solid gray;
+            border-bottom: 1px solid gray;
+        }
+        .piece {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 2px;
+        }
+        .bg-red {
+            background-color: red;
+        }
+
+        .bg-green {
+            background-color: green;
+        }
+        .none {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+
+        class Gobang extends React.Component {
+            constructor(props){
+                super(props)
+                this.state = {
+                    size: 5,
+                    isRedOffensive: true,
+                    checkerBoard: [[]],
+                    winner: ''
+                }
+                this.startGame = this.startGame.bind(this);
+            }
+
+            startGame(){
+                let isRedOffensive = true
+                if(this.refs.greenOffensive.checked)
+                    isRedOffensive = false
+
+                const size = parseInt(this.refs.size.value)
+                let checkerBoard = [];
+                for(let i = 0 ;i< size; i++){
+                    let line = [];
+                    for(let j = 0; j< size; j++){
+                        line.push('')
+                    }
+                    checkerBoard.push(line)
+                }
+                
+                this.setState({
+                    size: size,
+                    isRedOffensive: isRedOffensive,
+                    checkerBoard: checkerBoard,
+                    winner: ''
+                })
+            }
+
+            play(r, c) {
+                const checkerBoard = this.state.checkerBoard
+                if(checkerBoard[r][c] !== '')
+                    return;
+                let winner = this.state.winner;
+                if(winner !== '')
+                    return;
+
+                let isRedOffensive = this.state.isRedOffensive
+                let bgc = isRedOffensive ? 'bg-red' : 'bg-green'
+                checkerBoard[r][c] = bgc;
+                
+                const isWin = this.checkWinner(r, c, bgc)
+                if(isWin)
+                    winner = isRedOffensive ? 'Red' : 'Green'
+                
+                this.setState({
+                    isRedOffensive: !isRedOffensive,
+                    checkerBoard: checkerBoard,
+                    winner: winner
+                })
+            }
+
+            checkWinner(r, c, bgc) {
+                const size = this.state.size
+                const board = this.state.checkerBoard
+
+                const directions = [[0, -1], [1, -1], [1, 0], [1, 1]]
+                for(let k = 0; k < 4; k++){
+                    let count = 1
+                    let x = directions[k][0]
+                    let y = directions[k][1]
+                   
+                    for(let i = r + x, j = c + y; i > -1 && i < size && j > -1 && j < size; i += x, j +=y ){
+                        if(board[i][j] === bgc) count++
+                        else break
+                    }
+                    
+                    x = -x
+                    y = -y
+                    for(let i = r + x, j = c + y; i > -1 && i < size && j > -1 && j < size; i += x, j +=y ){
+                        if(board[i][j] === bgc) count++
+                        else break
+                    }
+                    if(count >= 5) return true
+                }                
+
+                return false
+            }
+
+            render() {
+                return (
+                    <div className='container'>
+                        <div className='flex'>
+                            <span>Offensive Player:</span>
+                            <span className='width65 red'><input type='radio' name='offensive' /> Red </span>
+                            <span className='width65 green'><input type='radio' name='offensive' ref='greenOffensive' /> Green </span>
+                        </div>
+                        <div className='flex'>
+                            <span>Checker Board Size:</span>
+                            <input type='number' min='5' max='10' defaultValue={this.state.size} ref='size' />
+                            <span className='prompt'>(Min: 5, Max: 10)</span>
+                        </div>
+                        <div className='center button-container'>
+                            <button onClick={this.startGame}>Start Game</button>                            
+                        </div>
+                        <div className={this.state.winner === ''? 'none' : 'center'}>
+                            <span>Congratulations, Winner is: </span>
+                            <span className={this.state.winner === 'Red' ? 'red' : 'green'}>{this.state.winner}</span>
+                        </div>
+                        <div className='center flex'>
+                            <table className='table'>
+                                <tbody>
+                                    {
+                                        this.state.checkerBoard.map((line,index) => (
+                                            <tr key={index}>
+                                                {
+                                                    line.map((c, cIndex) =>(
+                                                        <td className='td' key={`${index}_${cIndex}`} onClick={(event) => {
+                                                            this.play(index, cIndex)
+                                                        }}>
+                                                            <div className={'piece ' + this.state.checkerBoard[index][cIndex]}></div>
+                                                        </td>
+                                                    ))
+                                                }
+                                            </tr>
+                                        ))
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )
+            }
+        }
+
+        const container = document.getElementById('root')
+        const root = ReactDOM.createRoot(container)
+        root.render(<Gobang />)
+
+    </script>
+</body>
+</html>
+
+
+<!-- 
+    
+The above code implemented a simple Gobang game.
+I developed the Gobang game 20 years ago when I started learning C++.
+I devloped the Goang Game again when I started learning React, 
+although it's very simply and easy, 
+it's a good way to learn new things,
+so, I'm proud of the react version of Gobang Game.
+
+ -->
